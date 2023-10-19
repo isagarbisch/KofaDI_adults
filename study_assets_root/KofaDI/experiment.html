@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>My experiment</title>
+    <script src="https://unpkg.com/jspsych@7.3.1"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.1.2"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-multi-choice@1.1.2"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-image-button-response@1.1.2"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-video-button-response@1.1.2"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-fullscreen@1.1.2"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-preload@1.1.2"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-multi-choice@1.1.2"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-browser-check@1.0.2"></script>
+
+
+    <script src="stimuli.js"></script>
+    <script src="file_preload.js"></script>
+
+    <script src="jatos.js"></script>
+
+    <link href="https://unpkg.com/jspsych@7.3.1/css/jspsych.css" rel="stylesheet" type="text/css" />
+
+    <style>
+        .textMobile {
+            font-size: 60px;
+            line-height: 1.6em;
+            text-align: center;
+        }
+
+        .jspsych-btn-mobile {
+            font-size: 50px;
+
+            display: inline-block;
+            padding: 6px 12px;
+            margin: 0px;
+            font-weight: 400;
+            font-family: 'Arial', sans-serif;
+            font-weight: 100;
+            cursor: pointer;
+            line-height: 1.4;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            background-image: none;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            color: #333;
+            background-color: #fff;
+            border-color: #ccc;
+        }
+        #jspsych-fullscreen-btn {
+            font-size: 20px;
+        }
+
+    </style>
+</head>
+
+<body></body>
+<script>
+
+    jatos.onLoad(() => {
+        // send data to JATOS
+        var jsPsych = initJsPsych({
+            on_trial_start:
+                //jatos.addAbortButton,
+                function () {
+                    // store participants counterbalancing here
+                    var cb_group = jatos.urlQueryParameters.cb;
+
+                },
+            on_finish: function () {
+                var id = jatos.urlQueryParameters.participant_id;
+                var studyLink = jatos.urlQueryParameters.studyLink;
+                var redirectLink = studyLink + "?cb_group=" + cb_group;
+                //jsPsych.data.displayData();
+                //jsPsych.data.get().localSave('csv', 'mydata.csv');
+                jsPsych.data.addProperties({
+                    id: id,
+                    cb_group: cb_group,
+                    redirectLink: redirectLink
+                })
+
+                var resultJson = jsPsych.data.get().json();
+                jatos.submitResultData(resultJson);
+                jatos.endStudyAndRedirect(redirectLink, true, id + " " + cb_group);
+            }
+        });
+
+        // store participants counterbalancing here
+        var cb_group = jatos.urlQueryParameters.cb
+
+        //var cb_group = jsPsych.randomization.randomInt(1, 36);
+
+        // from the test_stimuli Object (which contains all the counterbalancing info an video links) 
+        //take n entry -1 (because in js all numbers start with 0) and then select the variables video_x and data and store them in variables here
+        // so test_stimuli[0] is actually the first entry. This works only because test_stimuli is numerically ordered by group! 
+        var video_1 = test_stimuli[cb_group - 1].video_1;
+        var video_2 = test_stimuli[cb_group - 1].video_2;
+        var video_3 = test_stimuli[cb_group - 1].video_3;
+        var data = test_stimuli[cb_group - 1].data;
+
+        // the "auto_preload: true" setting tells the plugin to automatically find 
+        // stimuli to preload based the main experiment timeline (used in jsPsych.run)
+        var preload = {
+            type: jsPsychPreload,
+            auto_preload: true, // automatically preload the image and audio files
+            // manually preload the videos used with timeline variables
+            images: images,
+            video: video
+        }
+
+        var browsercheck = {
+            type: jsPsychBrowserCheck,
+            features: ["width", "height", "browser", "mobile"],
+            data: { tag: 'browser_check' }
+        };
+
+        var widths_desktop = function () {
+            return jsPsych.data.get().filter({ tag: 'browser_check' }).last(1).values()[0].width / 1.5;
+        };
+
+        var widths_mobile = function () {
+            return jsPsych.data.get().filter({ tag: 'browser_check' }).last(1).values()[0].width / 1.5;
+        };
+
+/*
+        var mobile_here = function () {
+            
+            if(jsPsych.data.get().filter({part: 'device'}).last(1).values()[0].response.device == devDesktop) {
+                out = false
+            } else if(jsPsych.data.get().filter({part: 'device'}).last(1).values()[0].response.device == devMobile) {
+                out = true
+            }
+            return out;
+            
+        };
+        var mobile_here = function () {
+            return jsPsych.data.get().filter({ tag: 'browser_check' }).last(1).values()[0].mobile;
+        };
+       */ 
+    
+        var mobile_here = true;
+        var genTextStart = "<p class='textMobile'>"
+        function genText(mobile, text) {
+            console.log(mobile_here);
+            if (mobile == false) {
+                out = text
+            } else if (mobile == true) {
+                out = genTextStart.concat(text, "</p>");
+            }
+            return out
+        };
+        
+        function genButton(mobile) {
+            console.log(mobile_here);
+            if (mobile == false) {
+                out = '<button class="jspsych-btn">%choice%</button>'
+            } else if (mobile == true) {
+                out = '<button class= "jspsych-btn-mobile">%choice%</button>'
+            }
+            return out
+        };
+
+        // get the device to optimize how the study looks like for the participant
+        var devDesktop = "Computer/Laptop/Tablet";
+        var devMobile = "Smartphone";
+        var devPrompt = "Um die Darstellung zu verbessern, w&auml;hlen Sie bitte Ihr Ger&auml;t aus:";
+/*
+        var device = {
+            type: jsPsychSurveyMultiChoice,
+            questions: [
+                {
+                    prompt: devPrompt,
+                    name: 'device',
+                    options: [devDesktop, devMobile],
+                    required: true,
+                    horizontal: true
+                }
+            ],
+            button_label: 'Weiter',
+            data: { tag: 'device', widths_desktop: widths_desktop, widths_mobile: widths_mobile, mobile_here: mobile_here}
+        };
+*/
+        // based on their response allow certain video widths
+        var widths = function () {
+            if (mobile_here == false) {
+                return widths_desktop;
+            } else {
+                return widths_mobile;
+            }
+        };
+
+
+        // and certain control options for smartphones --> thereby they can opt to display the video in fullscreen
+        var controls_d_m = function () {
+            if (mobile_here == false) {
+                return false;
+            } else {
+                return true;
+            }
+        };
+
+        // full screen mode (but will not work with Safari)
+        var welcome = "Bitte schalten Sie den Ton an Ihrem Ger&auml;t ein. <br> <br> Anschlie&szlig;end wird die Studie vorgeladen. Das kann je nach Internetverbindung etwas dauern. <br> Falls die Nachricht erscheint 'failed to load experiment' k&ouml;nnen Sie einfach den Browser neu laden. <br> <br>"
+
+        var enter_fullscreen = {
+            timeline: [
+                {
+                    type: jsPsychFullscreen,
+                    fullscreen_mode: true,
+                    message: genText(mobile_here, welcome),
+                    button_label: 'Weiter'
+                }
+            ],
+            conditional_function: function () {
+                if (jsPsych.data.get().filter({ tag: 'browser_check' }).last(1).values()[0].browser != "safari" &&
+                    jsPsych.data.get().filter({ tag: 'browser_check' }).last(1).values()[0].mobile == false) {
+                    return true
+                } else if(jsPsych.data.get().filter({ tag: 'browser_check' }).last(1).values()[0].mobile == true){
+                    return true 
+                } else {
+                    return false
+                } 
+
+            }
+        };
+
+        // welcome screen (for Safari)
+        var welcome_screen = {
+            timeline: [
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    fullscreen_mode: true,
+                    message: genText(mobile_here, welcome),
+                    choices: ['Weiter']
+                }
+            ],
+            conditional_function: function () {
+                if (jsPsych.data.get().filter({ tag: 'browser_check' }).last(1).values()[0].browser == "safari" &&
+                    jsPsych.data.get().filter({ tag: 'browser_check' }).last(1).values()[0].mobile == false) {
+                    return true
+                } else {
+                    return false
+                }
+
+            }
+        };
+
+        // video control question
+        var control_tree = {
+            timeline: [
+                {
+                    type: jsPsychVideoButtonResponse,
+                    stimulus: jsPsych.timelineVariable('video'),
+                    choices: jsPsych.timelineVariable('choices'),
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true,
+                    //set this to false for the actual experiment, true for testing
+                    response_allowed_while_playing: true,
+                    width: widths,
+                    controls: controls_d_m,
+                    width: widths,
+                    data: { correct: jsPsych.timelineVariable('correct'), tag: 'control', story: 'tree' },
+                    on_finish: function (data) {
+                        if (data.response == jsPsych.timelineVariable('correct')) {
+                            data.correct_response = true;
+                        } else if (data.response != jsPsych.timelineVariable('correct')) {
+                            data.correct_response = false;
+                        }
+                    }
+                }
+            ],
+            timeline_variables: [
+                { video: ['videos/control_questions/tree_control_fruits_first.mp4'], correct: '0', choices: ['bekommt Fr&uuml;chte', 'passiert gar nichts', 'geht kaputt'] },
+                { video: ['videos/control_questions/tree_control_broken_first.mp4'], correct: '2', choices: ['geht kaputt', 'passiert gar nichts', 'bekommt Fr&uuml;chte'] }
+            ],
+            sample: {
+                type: 'without-replacement',
+                size: 1
+            }
+        };
+
+        var control_med = {
+            timeline: [
+                {
+                    type: jsPsychVideoButtonResponse,
+                    stimulus: jsPsych.timelineVariable('video'),
+                    choices: jsPsych.timelineVariable('choices'),
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true,
+                    //set this to false for the actual experiment
+                    response_allowed_while_playing: true,
+                    width: widths,
+                    controls: controls_d_m,
+                    data: { correct: jsPsych.timelineVariable('correct'), tag: 'control', story: 'med' },
+                    on_finish: function (data) {
+                        if (data.response == jsPsych.timelineVariable('correct')) {
+                            data.correct_response = true;
+                        } else if (data.response != jsPsych.timelineVariable('correct')) {
+                            data.correct_response = false;
+                        }
+                    }
+                }
+            ],
+            timeline_variables: [
+                { video: ['videos/control_questions/med_control_better_first.mp4'], correct: '0', choices: ['viel besser', 'passiert gar nichts', 'viel schlechter'] },
+                { video: ['videos/control_questions/med_control_worse_first.mp4'], correct: '2', choices: ['viel schlechter', 'passiert gar nichts', 'viel besser'] }
+            ],
+            sample: {
+                type: 'without-replacement',
+                size: 1
+            }
+        };
+
+        var control_chicken = {
+            timeline: [
+                {
+                    type: jsPsychVideoButtonResponse,
+                    stimulus: jsPsych.timelineVariable('video'),
+                    choices: jsPsych.timelineVariable('choices'),
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true,
+                    //set this to false for the actual experiment
+                    response_allowed_while_playing: true,
+                    width: widths,
+                    controls: controls_d_m,
+                    data: { correct: jsPsych.timelineVariable('correct'), tag: 'control', story: 'chicken' },
+                    on_finish: function (data) {
+                        if (data.response == jsPsych.timelineVariable('correct')) {
+                            data.correct_response = true;
+                        } else if (data.response != jsPsych.timelineVariable('correct')) {
+                            data.correct_response = false;
+                        }
+                    }
+                }
+            ],
+            timeline_variables: [
+                { video: ['videos/control_questions/chicken_control_mouse_first.mp4'], correct: '2', choices: ['nur Maus kommt raus', 'passiert gar nichts', 'beide kommen raus'] },
+                { video: ['videos/control_questions/chicken_control_both_first.mp4'], correct: '0', choices: ['beide kommen raus', 'passiert gar nichts', 'nur Maus kommt raus'] }
+            ],
+            sample: {
+                type: 'without-replacement',
+                size: 1
+            }
+        };
+
+
+        // video test trial    
+        var video_trial_1 = {
+            type: jsPsychVideoButtonResponse,
+            stimulus: video_1,
+            width: widths,
+            controls: controls_d_m,
+            choices: ["Weiter"],
+            button_html: genButton(mobile_here),
+            response_allowed_while_playing: true,
+            trial_ends_after_video: true,
+            data: data,
+            on_finish: function (data) {
+                data.tag = "video_1" //data tag, so we can search later for the entry by that tag
+            }
+        };
+
+        var video_trial_2 = {
+            type: jsPsychVideoButtonResponse,
+            stimulus: video_2,
+            choices: ['Weiter'],
+            button_html: genButton(mobile_here),
+            trial_ends_after_video: true,
+            response_allowed_while_playing: true,
+            width: widths,
+            controls: controls_d_m,
+            data: data,
+            on_finish: function (data) {
+                data.tag = "video_2"
+            }
+        };
+
+        var video_trial_3 = {
+            type: jsPsychVideoButtonResponse,
+            stimulus: video_3,
+            choices: ['Weiter'],
+            button_html: genButton(mobile_here),
+            trial_ends_after_video: true,
+            response_allowed_while_playing: true,
+            width: widths,
+            controls: controls_d_m,
+            data: data,
+            on_finish: function (data) {
+                data.tag = "video_3"
+            }
+        };
+
+        // IOT Fam questions
+        var iot_TN1_fahrrad = "Ist Kai zur Stra&szlig;e gerannt, um Johanna zu erschrecken?"
+        var iot_TN2_bild = "Ist Anna zu der Leinwand gegangen, um das Bild kaputt zu machen?"
+        var iot_TP1_ball = "Hat Lisa den Ball aufgehoben, um ihn zu Max zu zuwerfen?"
+        var iot_TP2_supermarkt = "Ist Lukas ans Regal gegangen, um Meike zu helfen?"
+        var iot_FP1_blumen = "Hat Maria den Blumenstrau&szlig; gepfl&uuml;ckt, um ihn Karl zu schenken?"
+        var iot_FP2_cafe = "Ist Jonas in die Stadt gegangen, um Conny zu treffen?"
+        var iot_FN1_leiter = "Ist Markus auf die Leiter geklettert, um runterzufallen?"
+        var iot_FN2_wettrennen = "Ist Peter gelaufen, um hinzufallen?"
+
+        // intention test questions
+
+        var e_tree = "Hat Hendrik den D&uuml;nger benutzt, um die Blumen von G&uuml;nter kaputt zu machen?";
+        var g_tree = "Hat Hendrik den D&uuml;nger benutzt, damit seine B&auml;ume Fr&uuml;chte tragen?";
+        var b_tree = "Hat Hendrik den D&uuml;nger benutzt, um seine B&auml;ume zu d&uuml;ngen?";
+
+        var e_med = "Hat Marie das Medikament geholt, damit dem Patienten die Haare ausfallen?";
+        var g_med = "Hat Marie das Medikament geholt, um den Patienten gesund zu machen?";
+        var b_med = "Hat Marie das Medikament geholt, um es dem Patienten zu geben?";
+
+        var e_chicken = "Hat Anna, den K&auml;fig aufgemacht, um Moritz Angst zu machen?";
+        var g_chicken = "Hat Anna, den K&auml;fig aufgemacht, um mit der Maus zu spielen?";
+        var b_chicken = "Hat Anna den K&auml;fig aufgemacht, um die Maus rauszuholen?";
+
+        // CF question
+        var cf_tree_neg = "Was w&auml;re, wenn es einen weiteren D&uuml;nger, den roten D&uuml;nger, gegeben h&auml;tte, der nur giftig ist, welchen h&auml;tte Hendrik genommen?</p>"
+        var cf_tree_pos = "Was w&auml;re, wenn es einen weiteren D&uuml;nger, den gr&uuml;nen D&uuml;nger, gegeben h&auml;tte, der nicht giftig ist, welchen h&auml;tte Hendrik genommen?</p>"
+
+        var cf_med_pos = "Was w&auml;re, wenn es ein weiteres Medikament, das gr&uuml;ne Medikament, gegeben h&auml;tte, bei dem keine Haare ausgefallen w&auml;ren, welches h&auml;tte Marie dann genommen?</p>"
+        var cf_med_neg = "Was w&auml;re, wenn es ein weiteres Medikament, das rote Medikament, gegeben h&auml;tte, bei dem den Patienten nur die Haare ausgefallen w&auml;ren und er nicht gesund geworden w&auml;re, welches h&auml;tte Marie dann genommen?</p>"
+
+        var cf_chicken_neg = "Was w&auml;re, wenn es einen weiteren K&auml;fig mit nur einem Huhn gegeben h&auml;tte, welchen h&auml;tte Anna dann aufgemacht?</p>"
+        var cf_chicken_pos = "Was w&auml;re, wenn es einen weiteren K&auml;fig mit nur der Maus gegeben h&auml;tte, welchen H&auml;tte Anna dann aufgemacht?</p>"
+
+        var fb_tree = "Durch den D&uuml;nger sind ja G&uuml;nters Blumen kaputt gegangen. Wusste Hendrik das?"
+        var fb_chicken = "Moritz hatte ja Angst vor H&uuml;hnern. Wusste Anna das?"
+        var fb_med = "Durch das Medikament sind ja dem Patienten die Haare ausgefallen. Wusste Marie das?"
+
+        // display the tree intention questions, in random order
+        var tree_trial = {
+            timeline: [
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: jsPsych.timelineVariable('question'),
+                    choices: ['Ja', 'Nein'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true,
+                    data: { type: jsPsych.timelineVariable('type'), tag: 'INTq', story: 'tree' }
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '',
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true
+                }
+            ],
+            timeline_variables: [
+                { question: '<img src="images/tree_test_question.png" height="300"> <br> <br>' + genText(mobile_here, e_tree) , type: 'A_iot_E' },
+                { question: '<img src="images/tree_test_question.png" height="300"> <br> <br>' + genText(mobile_here,g_tree), type: 'A_iot_G' },
+                { question: '<img src="images/tree_test_question.png" height="300"> <br> <br>' + genText(mobile_here,b_tree), type: 'A_iot_B' }
+            ],
+            randomize_order: true
+
+        };
+
+
+        // display counterfactual questions in random order (but always one pos. & one neg.)      
+
+        var tree_cf_pos = {
+            timeline: [
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: jsPsych.timelineVariable('image'),
+                    choices: jsPsych.timelineVariable('choices'),
+                    button_html: '<button class="jspsych-btn"><img src = "%choice%" height ="200"/></button>',
+                    maintain_aspect_ratio: true,
+                    response_ends_trial: true,
+                    data: { position: jsPsych.timelineVariable('cf'), tag: 'CFq', story: 'tree', type: 'pos' },
+                    on_finish: function (data) {
+                        if (data.response == '0' && jsPsych.pluginAPI.compareKeys(data.position, 'OG_right')) {
+                            data.cf_response = 'new';
+                        } else if (data.response == '1' && jsPsych.pluginAPI.compareKeys(data.position, 'OG_right')) {
+                            data.cf_response = 'OG';
+                        } else if (data.response == '0' && jsPsych.pluginAPI.compareKeys(data.position, 'OG_left')) {
+                            data.cf_response = 'OG';
+                        } else if (data.response == '1' && jsPsych.pluginAPI.compareKeys(data.position, 'OG_left')) {
+                            data.cf_response = 'new';
+                        } else {
+                            data.cf_response = 'NA';
+                        }
+                    }
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '',
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true
+                }
+            ],
+            timeline_variables: [
+                { image: '<img src="images/tree_OG_right_pos.png" height="300"> <br> <br> ' + genText(mobile_here,cf_tree_pos), cf: 'OG_right', choices: ['images/tree_pos_left.png', 'images/tree_OG_right.png'] },
+                { image: '<img src="images/tree_OG_left_pos.png" height="300"> <br> <br> ' + genText(mobile_here,cf_tree_pos), cf: 'OG_left', choices: ['images/tree_OG_left.png', 'images/tree_pos_right.png'] }
+
+            ],
+            sample: {
+                type: 'without-replacement',
+                size: 1
+            }
+
+        };
+
+        var tree_cf_neg = {
+            timeline: [
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: jsPsych.timelineVariable('image'),
+                    choices: jsPsych.timelineVariable('choices'),
+                    button_html: '<button class="jspsych-btn"><img src = "%choice%" height ="200"/></button>',
+                    maintain_aspect_ratio: true,
+                    response_ends_trial: true,
+                    data: { position: jsPsych.timelineVariable('cf'), tag: 'CFq', story: 'tree', type: 'neg' },
+                    on_finish: function (data) {
+                        if (data.response == '0' && jsPsych.pluginAPI.compareKeys(data.position, 'OG_right')) {
+                            data.cf_response = 'new';
+                        } else if (data.response == '1' && jsPsych.pluginAPI.compareKeys(data.position, 'OG_right')) {
+                            data.cf_response = 'OG';
+                        } else if (data.response == '0' && jsPsych.pluginAPI.compareKeys(data.position, 'OG_left')) {
+                            data.cf_response = 'OG';
+                        } else if (data.response == '1' && jsPsych.pluginAPI.compareKeys(data.position, 'OG_left')) {
+                            data.cf_response = 'new';
+                        } else {
+                            data.cf_response = 'NA';
+                        }
+                    }
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '',
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true
+                }
+            ],
+            timeline_variables: [
+                { image: '<img src="images/tree_OG_right_neg.png" height="300"> <br> <br> ' + genText(mobile_here,cf_tree_neg), cf: 'OG_right', choices: ['images/tree_neg_left.png', 'images/tree_OG_right.png'] },
+                { image: '<img src="images/tree_OG_left_neg.png" height="300"> <br> <br> ' + genText(mobile_here,cf_tree_neg), cf: 'OG_left', choices: ['images/tree_OG_left.png', 'images/tree_neg_right.png'] }
+
+            ],
+            sample: {
+                type: 'without-replacement',
+                size: 1
+            }
+
+        };
+
+        var tree_cf_r = {
+            timeline: jsPsych.randomization.shuffle([tree_cf_neg, tree_cf_pos])
+
+        };
+
+        // fb question tree
+
+        var tree_fb = {
+            type: jsPsychHtmlButtonResponse,
+            stimulus: '<img src="images/tree_test_question.png" height="300"> <br> <br>' + genText(mobile_here,fb_tree),
+            choices: ['Ja', 'Nein'],
+            button_html: genButton(mobile_here),
+            data: { tag: 'FBq', story: 'tree' }
+        };
+
+        // display the med intention questions, in random order
+        var med_trial = {
+            timeline: [
+
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: jsPsych.timelineVariable('question'),
+                    choices: ['Ja', 'Nein'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true,
+                    data: { type: jsPsych.timelineVariable('type'), tag: 'INTq', story: 'med' }
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '',
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true
+                }
+            ],
+            timeline_variables: [
+                { question: '<img src="images/med_test_question.png" height="300"> <br> <br>' + genText(mobile_here,e_med), type: 'A_iot_E' },
+                { question: '<img src="images/med_test_question.png" height="300"> <br> <br>' + genText(mobile_here,g_med), type: 'A_iot_G' },
+                { question: '<img src="images/med_test_question.png" height="300"> <br> <br>' + genText(mobile_here,b_med), type: 'A_iot_B' }
+            ],
+            randomize_order: true
+
+        };
+
+        // display counterfactual questions in random order (but always one pos. & one neg.)      
+
+        var med_cf_pos = {
+            timeline: [
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: jsPsych.timelineVariable('image'),
+                    choices: jsPsych.timelineVariable('choices'),
+                    button_html: '<button class="jspsych-btn"><img src = "%choice%" height ="200"/></button>',
+                    maintain_aspect_ratio: true,
+                    response_ends_trial: true,
+                    data: { position: jsPsych.timelineVariable('cf'), tag: 'CFq', story: 'med', type: 'pos' },
+                    on_finish: function (data) {
+                        if (data.response == '0' && jsPsych.pluginAPI.compareKeys(data.position, 'OG_right')) {
+                            data.cf_response = 'new';
+                        } else if (data.response == '1' && jsPsych.pluginAPI.compareKeys(data.position, 'OG_right')) {
+                            data.cf_response = 'OG';
+                        } else if (data.response == '0' && jsPsych.pluginAPI.compareKeys(data.position, 'OG_left')) {
+                            data.cf_response = 'OG';
+                        } else if (data.response == '1' && jsPsych.pluginAPI.compareKeys(data.position, 'OG_left')) {
+                            data.cf_response = 'new';
+                        } else {
+                            data.cf_response = 'NA';
+                        }
+                    }
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '',
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true
+                }
+            ],
+            timeline_variables: [
+                { image: '<img src="images/med_OG_right_pos.png" height="300"> <br> <br> ' + genText(mobile_here,cf_med_pos), cf: 'OG_right', choices: ['images/med_pos_left.png', 'images/med_OG_right.png'] },
+                { image: '<img src="images/med_OG_left_pos.png" height="300"> <br> <br> ' + genText(mobile_here,cf_med_pos), cf: 'OG_left', choices: ['images/med_OG_left.png', 'images/med_pos_right.png'] }
+
+            ],
+            sample: {
+                type: 'without-replacement',
+                size: 1
+            }
+
+        };
+
+        var med_cf_neg = {
+            timeline: [
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: jsPsych.timelineVariable('image'),
+                    choices: jsPsych.timelineVariable('choices'),
+                    button_html: '<button class="jspsych-btn"><img src = "%choice%" height ="200"/></button>',
+                    maintain_aspect_ratio: true,
+                    response_ends_trial: true,
+                    data: { position: jsPsych.timelineVariable('cf'), tag: 'CFq', story: 'med', type: 'neg' },
+                    on_finish: function (data) {
+                        if (data.response == '0' && jsPsych.pluginAPI.compareKeys(data.position, 'OG_right')) {
+                            data.cf_response = 'new';
+                        } else if (data.response == '1' && jsPsych.pluginAPI.compareKeys(data.position, 'OG_right')) {
+                            data.cf_response = 'OG';
+                        } else if (data.response == '0' && jsPsych.pluginAPI.compareKeys(data.position, 'OG_left')) {
+                            data.cf_response = 'OG';
+                        } else if (data.response == '1' && jsPsych.pluginAPI.compareKeys(data.position, 'OG_left')) {
+                            data.cf_response = 'new';
+                        } else {
+                            data.cf_response = 'NA';
+                        }
+                    }
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '',
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true
+                }
+            ],
+            timeline_variables: [
+                { image: '<img src="images/med_OG_right_neg.png" height="300"> <br> <br> ' + genText(mobile_here,cf_med_neg), cf: 'OG_right', choices: ['images/med_neg_left.png', 'images/med_OG_right.png'] },
+                { image: '<img src="images/med_OG_left_neg.png" height="300"> <br> <br> ' + genText(mobile_here,cf_med_neg), cf: 'OG_left', choices: ['images/med_OG_left.png', 'images/med_neg_right.png'] }
+
+            ],
+            sample: {
+                type: 'without-replacement',
+                size: 1
+            }
+
+        };
+
+        var med_cf_r = {
+            timeline: jsPsych.randomization.shuffle([med_cf_neg, med_cf_pos]),
+
+        };
+        // fb question med
+
+        var med_fb = {
+            type: jsPsychHtmlButtonResponse,
+            stimulus: '<img src="images/med_test_question.png" height="300"> <br> <br>' + genText(mobile_here,fb_med),
+            choices: ['Ja', 'Nein'],
+            button_html: genButton(mobile_here),
+            data: { tag: 'FBq', story: 'med' }
+        };
+
+        // display the chicken intention questions, in random order
+        var chicken_trial = {
+            timeline: [
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: jsPsych.timelineVariable('question'),
+                    choices: ['Ja', 'Nein'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true,
+                    data: { type: jsPsych.timelineVariable('type'), tag: 'INTq', story: 'chicken' }
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '',
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true
+                }
+            ],
+            timeline_variables: [
+                { question: '<img src="images/chicken_test_question.png" height="300"> <br> <br>' + genText(mobile_here,e_chicken), type: 'A_iot_E' },
+                { question: '<img src="images/chicken_test_question.png" height="300"> <br> <br>' + genText(mobile_here,g_chicken), type: 'A_iot_G' },
+                { question: '<img src="images/chicken_test_question.png" height="300"> <br> <br>' + genText(mobile_here,b_chicken), type: 'A_iot_B' }
+            ],
+            randomize_order: true
+
+        };
+
+
+        // display counterfactual questions in random order (but always one pos. & one neg.)      
+
+        var chicken_cf_pos = {
+            timeline: [
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: jsPsych.timelineVariable('image'),
+                    choices: jsPsych.timelineVariable('choices'),
+                    button_html: '<button class="jspsych-btn"><img src = "%choice%" height ="200"/></button>',
+                    maintain_aspect_ratio: true,
+                    response_ends_trial: true,
+                    data: { position: jsPsych.timelineVariable('cf'), tag: 'CFq', story: 'chicken', type: 'pos' },
+                    on_finish: function (data) {
+                        if (data.response == '0' && jsPsych.pluginAPI.compareKeys(data.position, 'OG_right')) {
+                            data.cf_response = 'new';
+                        } else if (data.response == '1' && jsPsych.pluginAPI.compareKeys(data.position, 'OG_right')) {
+                            data.cf_response = 'OG';
+                        } else if (data.response == '0' && jsPsych.pluginAPI.compareKeys(data.position, 'OG_left')) {
+                            data.cf_response = 'OG';
+                        } else if (data.response == '1' && jsPsych.pluginAPI.compareKeys(data.position, 'OG_left')) {
+                            data.cf_response = 'new';
+                        } else {
+                            data.cf_response = 'NA';
+                        }
+                    }
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '',
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true
+                }
+            ],
+            timeline_variables: [
+                { image: '<img src="images/chicken_OG_right_pos.png" height="300"> <br> <br> ' + genText(mobile_here,cf_chicken_pos), cf: 'OG_right', choices: ['images/chicken_pos_left.png', 'images/chicken_OG_right.png'] },
+                { image: '<img src="images/chicken_OG_left_pos.png" height="300"> <br> <br> ' + genText(mobile_here,cf_chicken_pos), cf: 'OG_left', choices: ['images/chicken_OG_left.png', 'images/chicken_pos_right.png'] }
+
+            ],
+            sample: {
+                type: 'without-replacement',
+                size: 1
+            }
+
+        };
+
+        var chicken_cf_neg = {
+            timeline: [
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: jsPsych.timelineVariable('image'),
+                    choices: jsPsych.timelineVariable('choices'),
+                    button_html: '<button class="jspsych-btn"><img src = "%choice%" height ="200"/></button>',
+                    maintain_aspect_ratio: true,
+                    response_ends_trial: true,
+                    data: { position: jsPsych.timelineVariable('cf'), tag: 'CFq', story: 'chicken', type: 'neg' },
+                    on_finish: function (data) {
+                        if (data.response == '0' && jsPsych.pluginAPI.compareKeys(data.position, 'OG_right')) {
+                            data.cf_response = 'new';
+                        } else if (data.response == '1' && jsPsych.pluginAPI.compareKeys(data.position, 'OG_right')) {
+                            data.cf_response = 'OG';
+                        } else if (data.response == '0' && jsPsych.pluginAPI.compareKeys(data.position, 'OG_left')) {
+                            data.cf_response = 'OG';
+                        } else if (data.response == '1' && jsPsych.pluginAPI.compareKeys(data.position, 'OG_left')) {
+                            data.cf_response = 'new';
+                        } else {
+                            data.cf_response = 'NA';
+                        }
+                    }
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '',
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true
+                }
+            ],
+            timeline_variables: [
+                { image: '<img src="images/chicken_OG_right_neg.png" height="300"> <br> <br> ' + genText(mobile_here,cf_chicken_neg), cf: 'OG_right', choices: ['images/chicken_neg_left.png', 'images/chicken_OG_right.png'] },
+                { image: '<img src="images/chicken_OG_left_neg.png" height="300"> <br> <br> ' + genText(mobile_here,cf_chicken_neg), cf: 'OG_left', choices: ['images/chicken_OG_left.png', 'images/chicken_neg_right.png'] }
+
+            ],
+            sample: {
+                type: 'without-replacement',
+                size: 1
+            }
+
+        };
+
+        var chicken_cf_r = {
+            timeline: jsPsych.randomization.shuffle([chicken_cf_neg, chicken_cf_pos])
+        };
+
+        var chicken_fb = {
+            type: jsPsychHtmlButtonResponse,
+            stimulus: '<img src="images/chicken_test_question.png" height="300"> <br> <br>' + genText(mobile_here,fb_chicken),
+            choices: ['Ja', 'Nein'],
+            button_html: genButton(mobile_here),
+            data: { tag: 'FBq', story: 'chicken' }
+        };
+
+        // control trials
+
+        // all in 1
+        var tree_timeline_1 = {
+            timeline: [control_tree, video_trial_1, tree_trial, tree_cf_r, tree_fb],
+            conditional_function: function () {
+                if (data.story_1 == "tree") {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        };
+
+        var med_timeline_1 = {
+            timeline: [control_med, video_trial_1, med_trial, med_cf_r, med_fb],
+            conditional_function: function () {
+                if (data.story_1 == "med") {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        };
+
+        var chicken_timeline_1 = {
+            timeline: [control_chicken, video_trial_1, chicken_trial, chicken_cf_r, chicken_fb],
+            conditional_function: function () {
+                if (data.story_1 == "chicken") {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        };
+
+        var tree_timeline_2 = {
+            timeline: [control_tree, video_trial_2, tree_trial, tree_cf_r, tree_fb],
+            conditional_function: function () {
+                if (data.story_2 == "tree") {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        };
+
+        var med_timeline_2 = {
+            timeline: [control_med, video_trial_2, med_trial, med_cf_r, med_fb],
+            conditional_function: function () {
+                if (data.story_2 == "med") {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        };
+
+        var chicken_timeline_2 = {
+            timeline: [control_chicken, video_trial_2, chicken_trial, chicken_cf_r, chicken_fb],
+            conditional_function: function () {
+                if (data.story_2 == "chicken") {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        };
+
+        var tree_timeline_3 = {
+            timeline: [control_tree, video_trial_3, tree_trial, tree_cf_r, tree_fb],
+            conditional_function: function () {
+                if (data.story_3 == "tree") {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        };
+
+        var med_timeline_3 = {
+            timeline: [control_med, video_trial_3, med_trial, med_cf_r, med_fb],
+            conditional_function: function () {
+                if (data.story_3 == "med") {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        };
+
+        var chicken_timeline_3 = {
+            timeline: [control_chicken, video_trial_3, chicken_trial, chicken_cf_r, chicken_fb],
+            conditional_function: function () {
+                if (data.story_3 == "chicken") {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        };
+
+        // IOT questions familarization
+
+
+        // for IOT_TRUE_NEG
+        // this plays one of the iot fam trials: first plays the video, then asks the question. 
+        // It stores, which type of question it was, whether the answer was correct or not and tags the trial to find it better later on.
+        var iot_true_neg = {
+            timeline: [
+                {
+                    type: jsPsychVideoButtonResponse,
+                    stimulus: jsPsych.timelineVariable('video'),
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    trial_ends_after_video: true,
+                    response_allowed_while_playing: true,
+                    width: widths,
+                    controls: controls_d_m,
+
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: jsPsych.timelineVariable('question'),
+                    choices: ['Ja', 'Nein'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true,
+                    data: { type: jsPsych.timelineVariable('type'), correct: jsPsych.timelineVariable('correct'), tag: 'fam_trial' },
+                    on_finish: function (data) {
+                        if (data.response == jsPsych.timelineVariable('correct')) {
+                            data.correct_response = true;
+                        } else if (data.response != jsPsych.timelineVariable('correct')) {
+                            data.correct_response = false;
+                        }
+                    }
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '',
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true
+                }
+            ],
+            //'<img src="images/chicken_test_question.png" height="300"> <br> <br>' +e_chicken,
+            timeline_variables: [
+                { video: ['videos/control_questions/IOT_TRUE_neg_1_Fahrrad.mp4'], type: 'TRUE_neg1', correct: '0', question: '<img src="images/Fahrrad_endscreen.png" height="300"> <br> <br>' + genText(mobile_here,iot_TN1_fahrrad) },
+                { video: ['videos/control_questions/IOT_TRUE_neg_2_Bild.mp4'], type: 'TRUE_neg2', correct: '0', question: '<img src="images/Bild_endscreen.png" height="300"> <br> <br>' + genText(mobile_here,iot_TN2_bild) },
+            ],
+            sample: {
+                type: 'without-replacement',
+                size: 1
+            }
+        };
+
+
+        // this is a conditional timeline which will only be shown if the inital answer was wrong
+        // AND IMPORTANTLY it will only be shown ,if the first video was the other one that will be shown here
+        var iot_true_neg2_error = {
+            timeline: [
+                {
+                    type: jsPsychVideoButtonResponse,
+                    stimulus: ['videos/control_questions/IOT_TRUE_neg_1_Fahrrad.mp4'],
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    trial_ends_after_video: true,
+                    response_allowed_while_playing: true,
+                    width: widths,
+                    controls: controls_d_m
+
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '<img src="images/Fahrrad_endscreen.png" height="300"> <br> <br>' + genText(mobile_here,iot_TN1_fahrrad),
+                    choices: ['Ja', 'Nein'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true,
+                    data: { type: 'TRUE_neg1', tag: 'fam_trial_error' },
+                    on_finish: function (data) {
+                        if (data.response == '0') {
+                            data.correct_response = true;
+                        } else if (data.response != '0') {
+                            data.correct_response = false;
+                        }
+                    }
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '',
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true
+                }
+            ],
+            conditional_function: function () {
+                var iot_last = jsPsych.data.get().filter({ tag: "fam_trial" }).last(1).values()[0].type;
+                if (iot_last == 'TRUE_neg2') {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        };
+        // same thing as above:
+        // this is a conditional timeline whcih will only be shown if the inital answer was wrong
+        // AND IMPORTANTLY it will only be shown ,if the first video was the other one that will be shown here
+        var iot_true_neg1_error = {
+            timeline: [
+                {
+                    type: jsPsychVideoButtonResponse,
+                    stimulus: ['videos/control_questions/IOT_TRUE_neg_2_Bild.mp4'],
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    trial_ends_after_video: true,
+                    response_allowed_while_playing: true,
+                    width: widths,
+                    controls: controls_d_m
+
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '<img src="images/Bild_endscreen.png" height="300"> <br> <br>' + genText(mobile_here,iot_TN2_bild),
+                    choices: ['Ja', 'Nein'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true,
+                    data: { type: 'TRUE_neg2', tag: 'fam_trial_error' },
+                    on_finish: function (data) {
+                        if (data.response == '0') {
+                            data.correct_response = true;
+                        } else if (data.response != '0') {
+                            data.correct_response = false;
+                        }
+                    }
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '',
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true
+                }
+            ],
+            conditional_function: function () {
+                var iot_last = jsPsych.data.get().filter({ tag: "fam_trial" }).last(1).values()[0].type;
+                if (iot_last == 'TRUE_neg1') {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        }
+        // this timeline will only start when someone mad an error in the first kind of these trials
+        var iot_true_neg_error = {
+            timeline: [iot_true_neg1_error, iot_true_neg2_error],
+            conditional_function: function () {
+                var last_resp = jsPsych.data.get().filter({ tag: "fam_trial" }).last(1).values()[0].correct_response;
+                if (last_resp == true) {
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+
+        }
+
+        // this combines all elements: first the inital fam trial, then the conditional timeline, if someone made a mistake
+        var iot_true_neg_timeline = { timeline: [iot_true_neg, iot_true_neg_error] }
+
+        // for IOT_TRUE_POS
+        // this plays one of the iot fam trials: first plays the video, then asks the question. 
+        // It stores, which type of question it was, whether the answer was correct or not and tags the trial to find it better later on.
+        var iot_true_pos = {
+            timeline: [
+                {
+                    type: jsPsychVideoButtonResponse,
+                    stimulus: jsPsych.timelineVariable('video'),
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    trial_ends_after_video: true,
+                    response_allowed_while_playing: true,
+                    width: widths,
+                    controls: controls_d_m
+
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: jsPsych.timelineVariable('question'),
+                    choices: ['Ja', 'Nein'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true,
+                    data: { type: jsPsych.timelineVariable('type'), correct: jsPsych.timelineVariable('correct'), tag: 'fam_trial' },
+                    on_finish: function (data) {
+                        if (data.response == jsPsych.timelineVariable('correct')) { // compares, whether answer was correct or not
+                            data.correct_response = true;
+                        } else if (data.response != jsPsych.timelineVariable('correct')) {
+                            data.correct_response = false;
+                        }
+                    }
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '',
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true
+                }
+            ],
+            timeline_variables: [
+                { video: ['videos/control_questions/IOT_TRUE_pos_1_Ball.mp4'], type: 'TRUE_pos1', correct: '0', question: '<img src="images/Ball_endscreen.png" height="300"> <br> <br>' + genText(mobile_here,iot_TP1_ball) },
+                { video: ['videos/control_questions/IOT_TRUE_pos_2_Supermarkt.mp4'], type: 'TRUE_pos2', correct: '0', question: '<img src="images/Supermarkt_endscreen.png" height="300"> <br> <br>' + genText(mobile_here,iot_TP2_supermarkt) },
+            ],
+            sample: {
+                type: 'without-replacement',
+                size: 1
+            }
+        };
+
+        // this is a conditional timeline whcih will only be shown if the inital answer was wrong
+        // AND IMPORTANTLY it will only be shown ,if the first video was the other one that will be shown here
+        var iot_true_pos2_error = {
+            timeline: [
+                {
+                    type: jsPsychVideoButtonResponse,
+                    stimulus: ['videos/control_questions/IOT_TRUE_pos_1_Ball.mp4'],
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    trial_ends_after_video: true,
+                    response_allowed_while_playing: true,
+                    width: widths,
+                    controls: controls_d_m
+
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '<img src="images/Ball_endscreen.png" height="300"> <br> <br>' + genText(mobile_here,iot_TP1_ball),
+                    choices: ['Ja', 'Nein'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true,
+                    data: { type: 'TRUE_pos1', tag: 'fam_trial_error' },
+                    on_finish: function (data) {
+                        if (data.response == '0') {
+                            data.correct_response = true;
+                        } else if (data.response != '0') {
+                            data.correct_response = false;
+                        }
+                    }
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '',
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true
+                }
+            ],
+            conditional_function: function () {
+                var iot_last = jsPsych.data.get().filter({ tag: "fam_trial" }).last(1).values()[0].type;
+                if (iot_last == 'TRUE_pos2') {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        };
+        // same thing as above:
+        // this is a conditional timeline whcih will only be shown if the inital answer was wrong
+        // AND IMPORTANTLY it will only be shown ,if the first video was the other one that will be shown here
+        var iot_true_pos1_error = {
+            timeline: [
+                {
+                    type: jsPsychVideoButtonResponse,
+                    stimulus: ['videos/control_questions/IOT_TRUE_pos_2_Supermarkt.mp4'],
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    trial_ends_after_video: true,
+                    response_allowed_while_playing: true,
+                    width: widths,
+                    controls: controls_d_m
+
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '<img src="images/Supermarkt_endscreen.png" height="300"> <br> <br>' + genText(mobile_here,iot_TP2_supermarkt),
+                    choices: ['Ja', 'Nein'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true,
+                    data: { type: 'TRUE_pos2', tag: 'fam_trial_error' },
+                    on_finish: function (data) {
+                        if (data.response == '0') {
+                            data.correct_response = true;
+                        } else if (data.response != '0') {
+                            data.correct_response = false;
+                        }
+                    }
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '',
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true
+                }
+            ],
+            conditional_function: function () {
+                var iot_last = jsPsych.data.get().filter({ tag: "fam_trial" }).last(1).values()[0].type;
+                if (iot_last == 'TRUE_pos1') {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        }
+        // this timeline will only start when someone mad an error in the first kind of these trials
+        var iot_true_pos_error = {
+            timeline: [iot_true_pos1_error, iot_true_pos2_error],
+            conditional_function: function () {
+                var last_resp = jsPsych.data.get().filter({ tag: "fam_trial" }).last(1).values()[0].correct_response;
+                if (last_resp == true) {
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+
+        }
+
+        // this combines all elements: first the inital fam trial, then the conditional timeline, if someone made a mistake
+        var iot_true_pos_timeline = { timeline: [iot_true_pos, iot_true_pos_error] }
+
+        // for IOT_FALSE_NEG
+        // this plays one of the iot fam trials: first plays the video, then asks the question. 
+        // It stores, which type of question it was, whether the answer was correct or not and tags the trial to find it better later on.
+        var iot_false_neg = {
+            timeline: [
+                {
+                    type: jsPsychVideoButtonResponse,
+                    stimulus: jsPsych.timelineVariable('video'),
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    trial_ends_after_video: true,
+                    response_allowed_while_playing: true,
+                    width: widths,
+                    controls: controls_d_m
+
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: jsPsych.timelineVariable('question'),
+                    choices: ['Ja', 'Nein'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true,
+                    data: { type: jsPsych.timelineVariable('type'), correct: jsPsych.timelineVariable('correct'), tag: 'fam_trial' },
+                    on_finish: function (data) {
+                        if (data.response == jsPsych.timelineVariable('correct')) { // compares, whether answer was correct or not
+                            data.correct_response = true;
+                        } else if (data.response != jsPsych.timelineVariable('correct')) {
+                            data.correct_response = false;
+                        }
+                    }
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '',
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true
+                }
+            ],
+            timeline_variables: [
+                { video: ['videos/control_questions/IOT_FALSE_neg_1_Leiter.mp4'], type: 'FALSE_neg1', correct: '1', question: '<img src="images/Leiter_endscreen.png" height="300"> <br> <br>' + genText(mobile_here,iot_FN1_leiter) },
+                { video: ['videos/control_questions/IOT_FALSE_neg_2_Wettrennen.mp4'], type: 'FALSE_neg2', correct: '1', question: '<img src="images/Wettrennen_endscreen.png" height="300"> <br> <br>' + genText(mobile_here,iot_FN2_wettrennen) },
+            ],
+            sample: {
+                type: 'without-replacement',
+                size: 1
+            }
+        };
+
+        // this is a conditional timeline whcih will only be shown if the inital answer was wrong
+        // AND IMPORTANTLY it will only be shown ,if the first video was the other one that will be shown here
+        var iot_false_neg2_error = {
+            timeline: [
+                {
+                    type: jsPsychVideoButtonResponse,
+                    stimulus: ['videos/control_questions/IOT_FALSE_neg_1_Leiter.mp4'],
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    trial_ends_after_video: true,
+                    response_allowed_while_playing: true,
+                    width: widths,
+                    controls: controls_d_m
+
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '<img src="images/Leiter_endscreen.png" height="300"> <br> <br>' + genText(mobile_here,iot_FN1_leiter),
+                    choices: ['Ja', 'Nein'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true,
+                    data: { type: 'FALSE_neg1', tag: 'fam_trial_error' },
+                    on_finish: function (data) {
+                        if (data.response == '1') {
+                            data.correct_response = true;
+                        } else if (data.response != '1') {
+                            data.correct_response = false;
+                        }
+                    }
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '',
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true
+                }
+            ],
+            conditional_function: function () {
+                var iot_last = jsPsych.data.get().filter({ tag: "fam_trial" }).last(1).values()[0].type;
+                if (iot_last == 'FALSE_neg2') {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        };
+        // same thing as above:
+        // this is a conditional timeline whcih will only be shown if the inital answer was wrong
+        // AND IMPORTANTLY it will only be shown ,if the first video was the other one that will be shown here
+        var iot_false_neg1_error = {
+            timeline: [
+                {
+                    type: jsPsychVideoButtonResponse,
+                    stimulus: ['videos/control_questions/IOT_FALSE_neg_2_Wettrennen.mp4'],
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    trial_ends_after_video: true,
+                    response_allowed_while_playing: true,
+                    width: widths,
+                    controls: controls_d_m
+
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '<img src="images/Wettrennen_endscreen.png" height="300"> <br> <br>' + genText(mobile_here,iot_FN2_wettrennen),
+                    choices: ['Ja', 'Nein'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true,
+                    data: { type: 'FALSE_neg2', tag: 'fam_trial_error' },
+                    on_finish: function (data) {
+                        if (data.response == '1') {
+                            data.correct_response = true;
+                        } else if (data.response != '1') {
+                            data.correct_response = false;
+                        }
+                    }
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '',
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true
+                }
+            ],
+            conditional_function: function () {
+                var iot_last = jsPsych.data.get().filter({ tag: "fam_trial" }).last(1).values()[0].type;
+                if (iot_last == 'FALSE_neg1') {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        }
+        // this timeline will only start when someone mad an error in the first kind of these trials
+        var iot_false_neg_error = {
+            timeline: [iot_false_neg1_error, iot_false_neg2_error],
+            conditional_function: function () {
+                var last_resp = jsPsych.data.get().filter({ tag: "fam_trial" }).last(1).values()[0].correct_response;
+                if (last_resp == true) {
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+
+        }
+
+        // this combines all elements: first the inital fam trial, then the conditional timeline, if someone made a mistake
+        var iot_false_neg_timeline = { timeline: [iot_false_neg, iot_false_neg_error] }
+
+        // for IOT_FALSE_POS
+        // this plays one of the iot fam trials: first plays the video, then asks the question. 
+        // It stores, which type of question it was, whether the answer was correct or not and tags the trial to find it better later on.
+        var iot_false_pos = {
+            timeline: [
+                {
+                    type: jsPsychVideoButtonResponse,
+                    stimulus: jsPsych.timelineVariable('video'),
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    trial_ends_after_video: true,
+                    response_allowed_while_playing: true,
+                    width: widths,
+                    controls: controls_d_m
+
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: jsPsych.timelineVariable('question'),
+                    choices: ['Ja', 'Nein'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true,
+                    data: { type: jsPsych.timelineVariable('type'), correct: jsPsych.timelineVariable('correct'), tag: 'fam_trial' },
+                    on_finish: function (data) {
+                        if (data.response == jsPsych.timelineVariable('correct')) { // compares, whether answer was correct or not
+                            data.correct_response = true;
+                        } else if (data.response != jsPsych.timelineVariable('correct')) {
+                            data.correct_response = false;
+                        }
+                    }
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '',
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true
+                }
+            ],
+            timeline_variables: [
+                { video: ['videos/control_questions/IOT_FALSE_pos_1_Blumen.mp4'], type: 'FALSE_pos1', correct: '1', question: '<img src="images/Blumen_endscreen.png" height="300"> <br> <br>' + genText(mobile_here,iot_FP1_blumen) },
+                { video: ['videos/control_questions/IOT_FALSE_pos_2_Cafe.mp4'], type: 'FALSE_pos2', correct: '1', question: '<img src="images/Cafe_endscreen.png" height="300"> <br> <br>' + genText(mobile_here,iot_FP2_cafe) },
+            ],
+            sample: {
+                type: 'without-replacement',
+                size: 1
+            }
+        };
+
+        // this is a conditional timeline whcih will only be shown if the inital answer was wrong
+        // AND IMPORTANTLY it will only be shown ,if the first video was the other one that will be shown here
+        var iot_false_pos2_error = {
+            timeline: [
+                {
+                    type: jsPsychVideoButtonResponse,
+                    stimulus: ['videos/control_questions/IOT_FALSE_pos_1_Blumen.mp4'],
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    trial_ends_after_video: true,
+                    response_allowed_while_playing: true,
+                    width: widths,
+                    controls: controls_d_m
+
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '<img src="images/Blumen_endscreen.png" height="300"> <br> <br>' + genText(mobile_here,iot_FP1_blumen),
+                    choices: ['Ja', 'Nein'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true,
+                    data: { type: 'FALSE_pos1', tag: 'fam_trial_error' },
+                    on_finish: function (data) {
+                        if (data.response == '1') {
+                            data.correct_response = true;
+                        } else if (data.response != '1') {
+                            data.correct_response = false;
+                        }
+                    }
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '',
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true
+                }
+            ],
+            conditional_function: function () {
+                var iot_last = jsPsych.data.get().filter({ tag: "fam_trial" }).last(1).values()[0].type;
+                if (iot_last == 'FALSE_pos2') {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        };
+        // same thing as above:
+        // this is a conditional timeline whcih will only be shown if the inital answer was wrong
+        // AND IMPORTANTLY it will only be shown ,if the first video was the other one that will be shown here
+        var iot_false_pos1_error = {
+            timeline: [
+                {
+                    type: jsPsychVideoButtonResponse,
+                    stimulus: ['videos/control_questions/IOT_FALSE_pos_2_Cafe.mp4'],
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    trial_ends_after_video: true,
+                    response_allowed_while_playing: true,
+                    width: widths,
+                    controls: controls_d_m
+
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '<img src="images/Cafe_endscreen.png" height="300"> <br> <br>' + genText(mobile_here,iot_FP2_cafe),
+                    choices: ['Ja', 'Nein'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true,
+                    data: { type: 'FALSE_pos2', tag: 'fam_trial_error' },
+                    on_finish: function (data) {
+                        if (data.response == '1') {
+                            data.correct_response = true;
+                        } else if (data.response != '1') {
+                            data.correct_response = false;
+                        }
+                    }
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: '',
+                    choices: ['Weiter'],
+                    button_html: genButton(mobile_here),
+                    response_ends_trial: true
+                }
+            ],
+            conditional_function: function () {
+                var iot_last = jsPsych.data.get().filter({ tag: "fam_trial" }).last(1).values()[0].type;
+                if (iot_last == 'FALSE_pos1') {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        }
+        // this timeline will only start when someone mad an error in the first kind of these trials
+        var iot_false_pos_error = {
+            timeline: [iot_false_pos1_error, iot_false_pos2_error],
+            conditional_function: function () {
+                var last_resp = jsPsych.data.get().filter({ tag: "fam_trial" }).last(1).values()[0].correct_response;
+                if (last_resp == true) {
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+
+        }
+
+        // this combines all elements: first the inital fam trial, then the conditional timeline, if someone made a mistake
+        var iot_false_pos_timeline = { timeline: [iot_false_pos, iot_false_pos_error] }
+
+
+        var iot_all_timeline = {
+            timeline: jsPsych.randomization.shuffle([iot_false_pos_timeline, iot_false_neg_timeline, iot_true_pos_timeline, iot_true_neg_timeline])
+        };
+
+        // exit full screen mode (but will not work with Safari)
+        var exit_fullscreen = {
+            timeline: [{
+                type: jsPsychFullscreen,
+                fullscreen_mode: false,
+                delay_after: 0
+            }],
+            conditional_function: function () {
+                if (jsPsych.data.get().filter({ tag: 'browser_check' }).last(1).values()[0].browser != "safari" &&
+                    jsPsych.data.get().filter({ tag: 'browser_check' }).last(1).values()[0].mobile == false) {
+                    return true
+                } else {
+                    return false
+                }
+
+            }
+        };
+
+        var timeline_1 = {
+            timeline: [tree_timeline_1, med_timeline_1, chicken_timeline_1]
+        }
+
+        var timeline_2 = {
+            timeline: [tree_timeline_2, med_timeline_2, chicken_timeline_2]
+        }
+
+        var timeline_3 = {
+            timeline: [tree_timeline_3, med_timeline_3, chicken_timeline_3]
+        }
+
+        var test_procedure = {
+            timeline: [browsercheck, enter_fullscreen, welcome_screen,
+                preload,
+                iot_all_timeline, timeline_1, timeline_2, timeline_3, exit_fullscreen
+            ]
+        }
+
+        var timeline = [test_procedure];
+
+        // run the experiment:
+        //jsPsych.run(timeline);
+
+
+        jsPsych.run([browsercheck, enter_fullscreen, welcome_screen, timeline_1, exit_fullscreen]);
+
+
+        // to simulate some timelines
+        //jsPsych.simulate(timeline, "visual");
+
+    });
+
+</script>
+
+</html>

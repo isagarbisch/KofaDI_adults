@@ -1,0 +1,24 @@
+
+{"msg":"Initial entry","timestamp":1681724963069,"studyUuid":"a2704ee9-bf12-4e94-a667-1c967e9a1f98","serversMac":"3C-22-FB-6D-F9-50","hashFunction":"SHA-256"}
+{"msg":"Created study","userName":"Admin","timestamp":1681724963070}
+{"msg":"Started study run with Personal Multiple worker","batchId":3,"studyCode":"3CZWPfohUVM","workerId":261,"timestamp":1681725050822}
+{"msg":"Started study run with Personal Multiple worker","batchId":3,"studyCode":"3CZWPfohUVM","workerId":262,"timestamp":1681725114317}
+{"msg":"Replaced component result data","componentUuid":"5cebf49e-41cc-40e2-9432-cf4498efc587","workerId":262,"dataHash":"8d182488ce7c12a14e4abdf64d5fa7c33e4cc4a63aa6b215ac6ff37bd99cb8af","timestamp":1681725131459}
+{"msg":"Finished study run","workerId":262,"timestamp":1681725131470}
+{"msg":"Started study run with Personal Multiple worker","batchId":3,"studyCode":"3CZWPfohUVM","workerId":265,"timestamp":1681744131882}
+{"msg":"Finished study run","workerId":265,"timestamp":1681744312205}
+{"msg":"Started study run with Personal Multiple worker","batchId":3,"studyCode":"3CZWPfohUVM","workerId":266,"timestamp":1681744326103}
+{"msg":"Started study run with Personal Multiple worker","batchId":3,"studyCode":"3CZWPfohUVM","workerId":267,"timestamp":1681744366281}
+{"msg":"Started study run with Personal Multiple worker","batchId":3,"studyCode":"3CZWPfohUVM","workerId":268,"timestamp":1681744452353}
+{"msg":"Finished study run","workerId":268,"timestamp":1681744513898}
+{"msg":"Started study run with Personal Multiple worker","batchId":3,"studyCode":"3CZWPfohUVM","workerId":269,"timestamp":1681744525884}
+{"msg":"Started study run with Personal Multiple worker","batchId":3,"studyCode":"3CZWPfohUVM","workerId":271,"timestamp":1681744867203}
+{"msg":"Started study run with Personal Multiple worker","batchId":3,"studyCode":"3CZWPfohUVM","workerId":272,"timestamp":1681745060771}
+{"msg":"Started study run with Personal Multiple worker","batchId":3,"studyCode":"3CZWPfohUVM","workerId":273,"timestamp":1681745078497}
+{"msg":"Started study run with Personal Multiple worker","batchId":3,"studyCode":"3CZWPfohUVM","workerId":274,"timestamp":1681745149009}
+{"msg":"Started study run with Personal Multiple worker","batchId":3,"studyCode":"3CZWPfohUVM","workerId":275,"timestamp":1681745160559}
+{"msg":"Started study run with Personal Multiple worker","batchId":3,"studyCode":"3CZWPfohUVM","workerId":276,"timestamp":1681745355333}
+{"msg":"Finish abandoned study","workerId":266,"timestamp":1681745358986}
+{"msg":"Started study run with Personal Multiple worker","batchId":3,"studyCode":"3CZWPfohUVM","workerId":277,"timestamp":1681745358990}
+{"msg":"Replaced component result data","componentUuid":"5cebf49e-41cc-40e2-9432-cf4498efc587","workerId":277,"dataHash":"4e95d3bc0afb2f3923aff554af0f2a3d82d627545de17d7c76b9442bc7322a58","timestamp":1681745743157}
+{"msg":"Finished study run","workerId":277,"timestamp":1681745743167}

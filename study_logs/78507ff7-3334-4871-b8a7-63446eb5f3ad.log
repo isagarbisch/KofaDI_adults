@@ -1,0 +1,10 @@
+
+{"msg":"Initial entry","timestamp":1681725013441,"studyUuid":"78507ff7-3334-4871-b8a7-63446eb5f3ad","serversMac":"3C-22-FB-6D-F9-50","hashFunction":"SHA-256"}
+{"msg":"Created study","userName":"Admin","timestamp":1681725013442}
+{"msg":"Started study run with Personal Multiple worker","batchId":4,"studyCode":"uqwfTsbPxGa","workerId":263,"timestamp":1681725148604}
+{"msg":"Replaced component result data","componentUuid":"3482f7a7-d711-407c-ae0d-1bb8bf10cd8b","workerId":263,"dataHash":"4e687f48cc4d9fadd522b376eddaab88310fd39267d2b49a47ff30ba41115be1","timestamp":1681725160591}
+{"msg":"Finished study run","workerId":263,"timestamp":1681725160604}
+{"msg":"Started study run with Personal Multiple worker","batchId":4,"studyCode":"uqwfTsbPxGa","workerId":264,"timestamp":1681725519145}
+{"msg":"Replaced component result data","componentUuid":"3482f7a7-d711-407c-ae0d-1bb8bf10cd8b","workerId":264,"dataHash":"f83ef50034a14db50b5318d4c03ee51c981bc801001d7286d374cf7b493f7b08","timestamp":1681725613773}
+{"msg":"Finished study run","workerId":264,"timestamp":1681725613785}
+{"msg":"Started study run with Personal Multiple worker","batchId":4,"studyCode":"uqwfTsbPxGa","workerId":270,"timestamp":1681744564597}
